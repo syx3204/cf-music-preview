@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音乐解析</title>
+    <style>
+        :root {
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --primary-color: #4285f4;
+            --button-bg: #4285f4;
+            --button-hover: #3367d6;
+            --lyrics-bg: #f8f9fa;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --primary-color: #bb86fc;
+            --button-bg: #bb86fc;
+            --button-hover: #9a67ea;
+            --lyrics-bg: #2d2d2d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .loading-container {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 25px;
+            position: relative;
+        }
+
+        .spinner::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 4px solid rgba(66, 133, 244, 0.2);
+        }
+
+        .spinner::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 4px solid transparent;
+            border-top-color: var(--primary-color);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 15px;
+            color: var(--text-color);
+        }
+
+        .quote {
+            font-style: italic;
+            color: var(--text-color);
+            opacity: 0.7;
+            line-height: 1.6;
+        }
+
+        .music-card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: none;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .cover-container {
+            position: relative;
+            width: 100%;
+            padding-top: 100%;
+            background: linear-gradient(135deg, var(--bg-color) 0%, #c3cfe2 100%);
+        }
+
+        .cover {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .music-info {
+            padding: 25px;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: var(--text-color);
+            opacity: 0.8;
+            margin-bottom: 15px;
+        }
+
+        .meta {
+            font-size: 16px;
+            color: var(--text-color);
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+
+        .action-button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: var(--button-bg);
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .action-button:hover {
+            background-color: var(--button-hover);
+        }
+
+        .lyrics-container {
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .lyrics-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 15px;
+            color: var(--text-color);
+        }
+
+        .lyrics {
+            white-space: pre-wrap;
+            padding: 15px;
+            background-color: var(--lyrics-bg);
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            line-height: 1.8;
+            color: var(--text-color);
+            opacity: 0.9;
+        }
+
+        @media (min-width: 768px) {
+            .music-card {
+                display: grid;
+                grid-template-columns: 300px 1fr;
+            }
+            .cover-container {
+                padding-top: 0;
+                height: 300px;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+        [data-theme="dark"] ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 加载状态 -->
+        <div class="loading-container" id="loading">
+            <div class="spinner"></div>
+            <div class="loading-text">正在解析音乐数据...</div>
+            <div class="quote" id="quote">"音乐是上帝赐给人类最美的礼物" — 马丁·路德</div>
+        </div>
+
+        <!-- 音乐卡片 -->
+        <div class="music-card" id="musicCard">
+            <div class="cover-container">
+                <img class="cover" id="cover" alt="专辑封面" onerror="this.src='https://via.placeholder.com/500?text=No+Cover'">
+            </div>
+            <div class="music-info">
+                <h1 class="title" id="title"></h1>
+                <p class="subtitle" id="subtitle"></p>
+                <p class="meta" id="artist"></p>
+                <p class="meta" id="album"></p>
+                <p class="meta" id="time"></p>
+                <button id="actionButton" class="action-button" style="display: none;">跳转播放</button>
+                
+                <div class="lyrics-container">
+                    <div class="lyrics-title">歌词</div>
+                    <div class="lyrics" id="lyrics"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 系统主题检测
+        function detectColorScheme() {
+            const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+            });
+        }
+
+        // 解析URL参数
+        function getUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                id: params.get('id'),
+                platform: params.get('f'),
+                type: params.get('t') || '0'
+            };
+        }
+
+        // 获取音乐数据
+        async function fetchMusicData() {
+            const { id, platform, type } = getUrlParams();
+            
+            if (!id || !platform) {
+                throw new Error('缺少参数: id 和 f 是必需的');
+            }
+
+            try {
+                // QQ音乐特殊处理
+                if (platform === '1') {
+                    const [songInfo, lyricData] = await Promise.all([
+                        fetch(`/api/qqmusic?id=${id}&t=${type}`).then(r => r.json()),
+                        fetch(`/api/proxy?platform=1&id=${id}`).then(r => r.json())
+                    ]);
+                    return { ...songInfo, lyric: lyricData.lyric };
+                } 
+                // 其他平台
+                else {
+                    const data = await fetch(`/api/proxy?platform=${platform}&id=${id}`).then(r => r.json());
+                    return { ...data, type: '0' }; // 非QQ音乐默认type=0
+                }
+            } catch (error) {
+                throw new Error(`数据加载失败: ${error.message}`);
+            }
+        }
+
+        // 显示音乐信息
+        function displayMusicInfo(data) {
+            if (data.code !== 200) throw new Error('数据解析失败');
+
+            // 基础信息
+            document.getElementById('cover').src = data.cover || 'https://via.placeholder.com/500?text=No+Cover';
+            document.getElementById('title').textContent = data.title || '未知歌曲';
+            document.getElementById('subtitle').textContent = data.subtitle || '';
+            document.getElementById('artist').textContent = `歌手: ${data.artist || '未知'}`;
+            document.getElementById('album').textContent = `专辑: ${data.album || '未知'}`;
+            document.getElementById('time').textContent = `发行时间: ${data.time || '未知'}`;
+            document.getElementById('lyrics').textContent = data.lyric || '暂无歌词';
+
+            // 处理跳转按钮
+            const button = document.getElementById('actionButton');
+            if (data.type === '1' && data.link) {
+                button.style.display = 'block';
+                button.onclick = () => {
+                    window.open(`${data.link}?f=${platform}&name=${encodeURIComponent(data.title)}&singer=${encodeURIComponent(data.artist)}&id=${data.id}`, '_blank');
+                };
+            } else {
+                button.style.display = 'none';
+            }
+
+            // 显示卡片
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('musicCard').style.display = 'grid';
+        }
+
+        // 错误处理
+        function handleError(error) {
+            console.error('Error:', error);
+            window.location.href = '404.html';
+        }
+
+        // 初始化
+        async function init() {
+            detectColorScheme();
+            try {
+                const musicData = await fetchMusicData();
+                displayMusicInfo(musicData);
+            } catch (error) {
+                handleError(error);
+            }
+        }
+
+        // 启动
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
